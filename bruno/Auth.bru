@@ -1,0 +1,23 @@
+meta {
+  name: Auth
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/oauth2/token/
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  client_id: {{clientId}}
+  grant_type: password
+  username: {{username}}
+  password: {{password}}
+}
+
+vars:post-response {
+  accessToken: res.body.access_token
+  refreshToken: res.body.refresh_token
+}
