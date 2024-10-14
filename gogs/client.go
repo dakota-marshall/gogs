@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Updates the RestCredentials for a given Credentials struct from src.
 func (creds *Credentials) UpdateRestCreds(src *RestCredentials) {
 	if src.AccessToken != "" {
 		creds.AccessToken = src.AccessToken
@@ -28,6 +29,8 @@ func (creds *Credentials) UpdateRestCreds(src *RestCredentials) {
 	}
 }
 
+// Server constructor that takes in optional credentials, and the needed connection information,
+// and returns a pointer to a Server object.
 func New(clientId string, clientSecret string, username string, password string, apiVersion string, baseUrl string) (*Server, error) {
 	creds := []string{clientId, clientSecret, username, password}
 	missingCred := false
@@ -48,6 +51,9 @@ func New(clientId string, clientSecret string, username string, password string,
 	}
 }
 
+// Attempts to authenticate to the specified OGS server,
+// and if no authentication is provided, will just test
+// calling the API.
 func (server *Server) Connect() error {
 
 	// Setup Client
@@ -117,7 +123,8 @@ func (server *Server) Connect() error {
 	return nil
 }
 
-// NewAPIRequest ...
+// This directly calls the OGS API, and returns a pointer to an ApiResult containing
+// the return status as well as the return data itself.
 func (server *Server) NewAPIRequest(method, apiCall string, jsonString []byte) (*ApiResult, error) {
 	fullUrl := server.BaseUrl + "/api/" + server.ApiVersion + apiCall
 
