@@ -1,35 +1,30 @@
 package gogs
 
 import (
-	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"time"
 )
 
-type Credentials struct {
-	ClientID         string
-	ClientSecret     string
-	Username         string
-	Password         string
-	AccessToken      string
-	RefreshToken     string
-	UserID           string
-	ChatAuth         string
-	UserJwt          string
-	NotificationAuth string
-}
-
-type Server struct {
-	Credentials *Credentials
-	IsAuthed    bool
-	ApiVersion  string
-	BaseUrl     string
-	httpClient  *http.Client
+func (creds *Credentials) UpdateRestCreds(src *RestCredentials) {
+	if src.AccessToken != "" {
+		creds.AccessToken = src.AccessToken
+	}
+	if src.TokenType != "" {
+		creds.TokenType = src.TokenType
+	}
+	if src.ExpiresIn != 0 {
+		creds.ExpiresIn = src.ExpiresIn
+	}
+	if src.Scope != "" {
+		creds.Scope = src.Scope
+	}
+	if src.RefreshToken != "" {
+		creds.RefreshToken = src.RefreshToken
+	}
 }
 
 // func New(clientId string, clientSecret string, username string, password string, apiVersion string, baseUrl string) (*Server, error) {
@@ -80,7 +75,7 @@ func (server *Server) Connect() error {
 	var response *http.Response
 	var err error
 
-	// get token if auth provided, otherwise nothing to do
+	// get token if auth provided, otherwise just test connection
 	if server.Credentials != nil {
 		data := url.Values{
 			"client_id":  {server.Credentials.ClientID},
@@ -89,29 +84,44 @@ func (server *Server) Connect() error {
 			"password":   {server.Credentials.Password},
 		}
 
-		response, err = server.httpClient.PostForm(server.BaseUrl+"/oauth2/token", data)
+		response, err = server.httpClient.PostForm(server.BaseUrl+"/oauth2/token/", data)
+		if err != nil {
+			server.httpClient = nil
+			return err
+		}
+		if response.StatusCode != 200 {
+			server.httpClient = nil
+			return fmt.Errorf("Error: Got non 200 status code from auth-endpoint: %d", response.StatusCode)
+		}
+
+		// Decode response
+		var authData RestCredentials
+		if decodeErr := json.NewDecoder(response.Body).Decode(&authData); decodeErr != nil {
+			return decodeErr
+		}
+
+		// Update fields in server credentials
+		server.Credentials.UpdateRestCreds(&authData)
+		defer response.Body.Close()
+	} else { // Call API root to ensure we can talk to OGS Api
+		request, err := http.NewRequest("GET", server.BaseUrl+"/api/"+server.ApiVersion, nil)
 		if err != nil {
 			server.httpClient = nil
 			return err
 		}
 
-		// Decode response
-		var results APIResult
-		if decodeErr := json.NewDecoder(response.Body).Decode(&results); decodeErr != nil {
-			return decodeErr
+		request.Header.Set("Accept", "application/json")
+		response, err := server.httpClient.Do(request)
+		if err != nil || response == nil {
+			server.httpClient = nil
+			return err
 		}
-		if results.Code != 200 {
-			return fmt.Errorf("Got bad return code from auth endpoint")
+		if response.StatusCode != 200 {
+			server.httpClient = nil
+			return fmt.Errorf("Non 200 test response: %d", response.StatusCode)
 		}
-
-		var authData AuthResponse
-		if decodeErr := json.NewDecoder(results.Results).Decode(&authData); decodeErr != nil {
-			return decodeErr
-		}
-
+		defer response.Body.Close()
 	}
-
-	defer response.Body.Close()
 
 	return nil
 }
