@@ -4,6 +4,14 @@ import (
 	"net/http"
 )
 
+type ApiResult struct {
+	Code        int
+	Status      string
+	Error       string
+	ErrorString string
+	Results     interface{}
+}
+
 type RestCredentials struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`

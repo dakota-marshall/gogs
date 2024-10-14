@@ -1,6 +1,7 @@
 package gogs
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -27,36 +28,25 @@ func (creds *Credentials) UpdateRestCreds(src *RestCredentials) {
 	}
 }
 
-// func New(clientId string, clientSecret string, username string, password string, apiVersion string, baseUrl string) (*Server, error) {
-// 	return &Server{
-// 		&Credentials{
-// 			clientId,
-// 			clientSecret,
-// 			username,
-// 			password,
-// 		},
-// 		false,
-// 		apiVersion,
-// 		baseUrl,
-// 		nil,
-// 	}, nil
-// }
+func New(clientId string, clientSecret string, username string, password string, apiVersion string, baseUrl string) (*Server, error) {
+	creds := []string{clientId, clientSecret, username, password}
+	missingCred := false
+	for _, cred := range creds {
+		if cred == "" {
+			missingCred = true
+			break
+		}
+	}
 
-// func (server *Server) Config(clientId string, clientSecret string, username string, password string, apiVersion string, baseUrl, string) (*Server, error) {
-// 	// TODO : Add code to verify parameters
-// 	return &Server{
-//         &Credentials{
-//             clientId,
-//             clientSecret,
-//             username,
-//             password,
-//         },
-//         false,
-//         apiVersion,
-//         baseUrl,
-//         nil,
-//     }, nil
-// }
+	if missingCred {
+		newServer := Server{false, apiVersion, baseUrl, nil, &Credentials{}}
+		return &newServer, nil
+	} else {
+		newCreds := Credentials{clientId, clientSecret, username, password, "", "", "", "", RestCredentials{}}
+		newServer := Server{false, apiVersion, baseUrl, nil, &newCreds}
+		return &newServer, nil
+	}
+}
 
 func (server *Server) Connect() error {
 
@@ -76,7 +66,8 @@ func (server *Server) Connect() error {
 	var err error
 
 	// get token if auth provided, otherwise just test connection
-	if server.Credentials != nil {
+	var emptyCreds Credentials
+	if *server.Credentials != emptyCreds {
 		data := url.Values{
 			"client_id":  {server.Credentials.ClientID},
 			"grant_type": {"password"},
@@ -127,89 +118,61 @@ func (server *Server) Connect() error {
 }
 
 // NewAPIRequest ...
-// func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (*APIResult, error) {
-//
-// 	fullURL := server.BaseURL + APICall
-//
-// 	t := &http.Transport{
-// 		TLSClientConfig: &tls.Config{
-// 			InsecureSkipVerify: server.AllowUnverifiedSSL,
-// 		},
-// 	}
-//
-// 	server.httpClient = &http.Client{
-// 		Transport: t,
-// 		Timeout:   time.Second * 60,
-// 	}
-//
-// 	request, requestErr := http.NewRequest(method, fullURL, bytes.NewBuffer(jsonString))
-// 	if requestErr != nil {
-// 		return nil, requestErr
-// 	}
-//
-// 	request.SetBasicAuth(server.Username, server.Password)
-// 	request.Header.Set("Accept", "application/json")
-// 	request.Header.Set("Content-Type", "application/json")
-//
-// 	var response *http.Response
-// 	var doErr error
-// 	retries := 0
-// 	for {
-// 		response, doErr = server.httpClient.Do(request)
-//
-// 		if !((doErr != nil) || (response == nil || response.StatusCode == 503)) {
-// 			break
-// 		}
-//
-// 		if retries >= server.Retries {
-// 			break
-// 		}
-// 		retries++
-// 		time.Sleep(server.RetryDelay)
-// 	}
-//
-// 	if doErr != nil {
-// 		results := APIResult{
-// 			Code:        0,
-// 			Status:      "Error : Request to server failed : " + doErr.Error(),
-// 			ErrorString: doErr.Error(),
-// 			Retries:     retries,
-// 		}
-// 		return &results, doErr
-// 	}
-// 	defer response.Body.Close()
-//
-// 	var results APIResult
-// 	if decodeErr := json.NewDecoder(response.Body).Decode(&results); decodeErr != nil {
-// 		return nil, decodeErr
-// 	}
-//
-// 	if results.Retries == 0 { // results.Retries have default value so set it.
-// 		results.Retries = retries
-// 	}
-//
-// 	if results.Code == 0 { // results.Code has default value so set it.
-// 		results.Code = response.StatusCode
-// 	}
-//
-// 	if results.Status == "" { // results.Status has default value, so set it.
-// 		results.Status = response.Status
-// 	}
-//
-// 	switch results.Code {
-// 	case 0:
-// 		results.ErrorString = "Did not get a response code."
-// 	case 404:
-// 		results.ErrorString = results.Status
-// 	case 200:
-// 		results.ErrorString = results.Status
-// 	default:
-// 		results.ErrorString = results.Status
-// 		//theError := strings.Replace(results.Results.([]interface{})[0].(map[string]interface{})["errors"].([]interface{})[0].(string), "\n", " ", -1)
-// 		//results.ErrorString = strings.Replace(theError, "Error: ", "", -1)
-//
-// 	}
-//
-// 	return &results, nil
-//
-// }
+func (server *Server) NewAPIRequest(method, apiCall string, jsonString []byte) (*ApiResult, error) {
+	fullUrl := server.BaseUrl + "/api/" + server.ApiVersion + apiCall
+
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: false,
+		},
+	}
+
+	server.httpClient = &http.Client{
+		Transport: t,
+		Timeout:   time.Second * 60,
+	}
+
+	request, requestErr := http.NewRequest(method, fullUrl, bytes.NewBuffer(jsonString))
+	if requestErr != nil {
+		return nil, requestErr
+	}
+
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer "+server.Credentials.AccessToken)
+
+	var response *http.Response
+	var doErr error
+	var result ApiResult
+
+	response, doErr = server.httpClient.Do(request)
+	if doErr != nil {
+		result.Code = 0
+		result.Status = "Error: Request to server failed: " + doErr.Error()
+		result.ErrorString = doErr.Error()
+		return &result, doErr
+	}
+	defer response.Body.Close()
+
+	result.Status = response.Status
+
+	// Check Return Codes
+	result.Code = response.StatusCode
+	switch result.Code {
+	case 0:
+		result.ErrorString = "Did not get response code"
+	default:
+		result.ErrorString = result.Status
+	}
+
+	// Decode Response Body
+	decodeErr := json.NewDecoder(response.Body).Decode(&result.Results)
+	if decodeErr != nil {
+		result.Code = 0
+		result.Status = "Error: failed to decode response body: " + decodeErr.Error()
+		result.ErrorString = decodeErr.Error()
+		return &result, decodeErr
+	}
+	return &result, nil
+
+}
