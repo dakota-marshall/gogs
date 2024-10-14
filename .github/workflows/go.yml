@@ -1,0 +1,33 @@
+name: Go
+on: push
+
+jobs:
+
+  test:
+    name: Run tests and collect coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -coverprofile=coverage.txt ./...
+        env:
+          ICINGA2_API_PASSWORD: ${{ steps.icinga_pass.outputs.password }}
+          OGS_CLIENT_ID: ${{ secrets.OGS_CLIENT_ID }}
+          OGS_CLIENT_SECRET: ${{ secrets.OGS_CLIENT_SECRET }}
+          OGS_USERNAME: ${{ secrets.OGS_USERNAME }}
+          OGS_PASSWORD: ${{ secrets.OGS_PASSWORD }}
+
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
