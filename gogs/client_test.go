@@ -13,7 +13,7 @@ import (
 func CreateServerObject() Server {
 	var envErr = godotenv.Load("../.env")
 	if envErr != nil {
-		log.Fatal("Error loading .env file")
+		log.Print("Failed to load .env file")
 	}
 	var ogsCreds = Credentials{
 		os.Getenv("OGS_CLIENT_ID"),
