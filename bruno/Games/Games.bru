@@ -1,0 +1,20 @@
+meta {
+  name: Games
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVer}}/games/{{id}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  id: 111111111
+}

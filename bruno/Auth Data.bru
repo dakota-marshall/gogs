@@ -1,0 +1,16 @@
+meta {
+  name: Auth Data
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVer}}/ui/config
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}

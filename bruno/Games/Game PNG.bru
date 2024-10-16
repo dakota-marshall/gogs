@@ -1,0 +1,20 @@
+meta {
+  name: Game PNG
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVer}}/games/{{id}}/png
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  id: 67614587
+}
