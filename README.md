@@ -14,5 +14,58 @@ I am using Bruno to document the OGS API, as its official documentation is lacki
 ## Current To-Do List:
 
 - [x] Implement the core server class to handle the actual API calls
-- [ ] Implement the basic REST API calls 
+- [/] Implement the basic REST API calls 
 - [ ] Figure out how to re-implement the Socket.io API in Go
+
+## REST API Endpoints Checklist
+
+- [ ] `/announcements`
+	- [ ] `/history`
+- [ ] `/demos`
+- [ ] `/reviews`
+	- [ ] `/{id}`
+	- [ ] `/{id}/png`
+	- [ ] `/{id}/sgf`
+- [ ] `/games`
+	- [x] `/{id}` ✅ 2024-10-15
+	- [x] `/{id}/png` ✅ 2024-10-15
+	- [ ] `/{id}/sgf`
+	- [ ] `/{id}/reviews`
+- [ ] `/groups`
+	- [ ] `/{id}`
+	- [ ] `/{id}/ladders`
+	- [ ] `/{id}/members`
+	- [ ] `/{id}/news`
+- [ ] `/ladders`
+	- [ ] `/{id}`
+- [ ] `/leaderboards`
+- [ ] `/library/{id}`
+- [ ] `/me`
+	- [ ] `/account_settings`
+	- [ ] `/blocks`
+	- [ ] `/challenges`
+	- [ ] `/friends`
+	- [ ] `/games`
+	- [ ] `/groups`
+	- [ ] `/ladders`
+	- [ ] `/settings`
+- [ ] `/ui/overview`
+- [ ] `/players`
+	- [ ] `/{id}`
+	- [ ] `/{id}/full`
+	- [ ] `/{id}/games`
+	- [ ] `/{id}/groups`
+	- [ ] `/{id}/ladders`
+	- [ ] `/{id}/tournaments`
+- [ ] `/puzzles`
+	- [ ] `/full`
+	- [ ] `/{id}`
+	- [ ] `/collections`
+- [ ] `/tournaments`
+	- [ ] `/{id}`
+	- [ ] `/{id}/players`
+	- [ ] `/{id}/rounds`
+- [ ] `/tournament_records`
+	- [ ] `/{id}`
+	- [ ] `/{id}/players`
+	- [ ] `/{id}/rounds`
