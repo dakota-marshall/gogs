@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// Get Game Tests
 func TestGetGameById(t *testing.T) {
 	assert := assert.New(t)
 	var gameId int = 67679508
@@ -47,4 +48,20 @@ func TestGetGameByIdRengo(t *testing.T) {
 	assert.NotEmpty(game.Gamedata.Clock.CurrentPlayer)
 	assert.True(game.Gamedata.Rengo)
 	assert.NotEmpty(game.Gamedata.RengoTeams.Black, game.Gamedata.RengoTeams.Black)
+}
+
+// Get PNG Tests
+func TestGetGamePng(t *testing.T) {
+	var gameId int = 68251525
+	pngData, err := ogsServer.GetGamePng(gameId)
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, *pngData)
+}
+func TestGetGamePngBadId(t *testing.T) {
+	var gameId int = 111111111111
+	pngData, err := ogsServer.GetGamePng(gameId)
+	assert.Error(t, err)
+
+	assert.Empty(t, *pngData)
 }

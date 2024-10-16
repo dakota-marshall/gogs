@@ -31,3 +31,21 @@ func (server *Server) GetGameById(gameId int) (Game, error) {
 	return game, nil
 
 }
+
+// Accepts a game ID and returns a pointer to the PNG of the specified game
+func (server *Server) GetGamePng(gameId int) (*[]byte, error) {
+	var pngData []byte
+
+	result, err := server.NewRawAPIRequest("GET", "/games/"+strconv.Itoa(gameId)+"/png")
+	if err != nil {
+		return &pngData, err
+	}
+	if result.Code != 200 {
+		return &pngData, fmt.Errorf("Got non 200 return code from API: %d", result.Code)
+	}
+
+	pngData = result.ResultData
+
+	return &pngData, nil
+
+}

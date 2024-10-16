@@ -14,6 +14,15 @@ type ApiResult struct {
 	Results     interface{}
 }
 
+// Struct for handling raw data received from the API endpoint
+type RawApiResult struct {
+	Code        int
+	Status      string
+	Error       string
+	ErrorString string
+	ResultData  []byte
+}
+
 // Struct for storing the credentials we receive from the REST API
 type RestCredentials struct {
 	AccessToken  string `json:"access_token"`

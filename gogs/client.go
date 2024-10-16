@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -180,6 +181,66 @@ func (server *Server) NewAPIRequest(method, apiCall string, jsonString []byte) (
 		result.ErrorString = decodeErr.Error()
 		return &result, decodeErr
 	}
+	return &result, nil
+
+}
+
+// This directly calls the OGS API, and returns a pointer to an RawApiResult containing
+// the return status as well as the return data itself. This endpoint handles raw data endpoints
+// such as the PNG and SGF endpoints for games.
+func (server *Server) NewRawAPIRequest(method, apiCall string) (*RawApiResult, error) {
+	fullUrl := server.BaseUrl + "/api/" + server.ApiVersion + apiCall
+
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: false,
+		},
+	}
+
+	server.httpClient = &http.Client{
+		Transport: t,
+		Timeout:   time.Second * 60,
+	}
+
+	request, requestErr := http.NewRequest(method, fullUrl, nil)
+	if requestErr != nil {
+		return nil, requestErr
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer "+server.Credentials.AccessToken)
+
+	var response *http.Response
+	var doErr error
+	var result RawApiResult
+
+	response, doErr = server.httpClient.Do(request)
+	if doErr != nil {
+		result.Code = 0
+		result.Status = "Error: Request to server failed: " + doErr.Error()
+		result.ErrorString = doErr.Error()
+		return &result, doErr
+	}
+	defer response.Body.Close()
+
+	result.Status = response.Status
+
+	// Check Return Codes
+	result.Code = response.StatusCode
+	switch result.Code {
+	case 0:
+		result.ErrorString = "Did not get response code"
+	default:
+		result.ErrorString = result.Status
+	}
+
+	//Read response body
+	var readErr error
+	result.ResultData, readErr = io.ReadAll(response.Body)
+	if readErr != nil {
+		return &result, readErr
+	}
+
 	return &result, nil
 
 }
